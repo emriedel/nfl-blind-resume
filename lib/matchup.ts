@@ -19,6 +19,9 @@ export interface QBSeasonWithElo {
   touchdowns: number;
   interceptions: number;
   passerRating: string;
+  rushAttempts: number;
+  rushYards: number;
+  rushTouchdowns: number;
   wins: number | null;
   losses: number | null;
   eloRating: {
