@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface Stats {
   gamesPlayed: number;
@@ -102,6 +103,14 @@ export default function Home() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-end mb-4">
+            <Link
+              href="/standings"
+              className="text-blue-600 hover:text-blue-700 font-semibold"
+            >
+              View Rankings →
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             QB Blind Resume
           </h1>
