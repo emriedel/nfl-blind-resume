@@ -7,6 +7,7 @@ import { prisma } from "./db";
 import type { Decimal } from "@prisma/client/runtime/library";
 
 const RECENT_MATCHUP_LIMIT = 20; // Avoid repeating matchups from last 20 shown
+const MAX_ELO_DIFFERENCE = 100; // Maximum ELO difference between matched seasons
 
 export interface QBSeasonWithElo {
   id: number;
@@ -82,22 +83,36 @@ export async function getRandomMatchup(
     );
   }
 
-  // Select two random seasons
+  // Select first season randomly
   const seasonA =
     availableSeasons[Math.floor(Math.random() * availableSeasons.length)];
-  let seasonB =
-    availableSeasons[Math.floor(Math.random() * availableSeasons.length)];
 
-  // Ensure seasonB is different from seasonA
-  let attempts = 0;
-  while (seasonB.id === seasonA.id && attempts < 10) {
-    seasonB =
-      availableSeasons[Math.floor(Math.random() * availableSeasons.length)];
-    attempts++;
-  }
+  const seasonAElo = seasonA.eloRating
+    ? parseFloat(seasonA.eloRating.eloScore.toString())
+    : 1500;
 
-  if (seasonB.id === seasonA.id) {
-    throw new Error("Could not find two different seasons for matchup");
+  // Filter seasons that are within ELO range of seasonA
+  const eloMatchedSeasons = availableSeasons.filter((season) => {
+    if (season.id === seasonA.id) return false;
+
+    const seasonElo = season.eloRating
+      ? parseFloat(season.eloRating.eloScore.toString())
+      : 1500;
+
+    return Math.abs(seasonElo - seasonAElo) <= MAX_ELO_DIFFERENCE;
+  });
+
+  // If we have enough ELO-matched seasons, use those; otherwise fall back to any different season
+  let seasonB: QBSeasonWithElo;
+  if (eloMatchedSeasons.length > 0) {
+    seasonB = eloMatchedSeasons[Math.floor(Math.random() * eloMatchedSeasons.length)];
+  } else {
+    // Fallback: select any different season
+    const fallbackSeasons = availableSeasons.filter(s => s.id !== seasonA.id);
+    if (fallbackSeasons.length === 0) {
+      throw new Error("Could not find two different seasons for matchup");
+    }
+    seasonB = fallbackSeasons[Math.floor(Math.random() * fallbackSeasons.length)];
   }
 
   // Record this matchup in history
