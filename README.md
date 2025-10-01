@@ -92,8 +92,23 @@ docker-compose down -v
 
 **Production (Neon):**
 - Set up at https://neon.tech
-- Use the pooled connection URL for `DATABASE_URL`
-- Use the direct connection URL for `DIRECT_URL`
+- Neon automatically provides `DATABASE_URL` environment variable to Vercel
+- Migrations run automatically during build via `prisma migrate deploy`
+
+**Seeding Production Database:**
+
+After your first deployment, seed the production database with QB data:
+
+```bash
+# Set your production DATABASE_URL (get from Vercel or Neon dashboard)
+DATABASE_URL="your-neon-connection-string" npm run db:seed:production
+```
+
+The seed script will:
+- Fetch QB stats from NFLverse (1999-2024)
+- Filter to qualifying seasons (8+ games, 200+ attempts)
+- Insert ~864 QB seasons with initial ELO ratings
+- Skip if data already exists (to prevent duplicates)
 
 ## Project Structure
 
