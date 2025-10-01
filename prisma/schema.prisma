@@ -10,20 +10,23 @@ datasource db {
 }
 
 model QBSeason {
-  id           Int      @id @default(autoincrement())
-  playerName   String   @map("player_name")
-  year         Int
-  team         String
-  gamesPlayed  Int      @map("games_played")
-  passAttempts Int      @map("pass_attempts")
-  completions  Int
-  passingYards Int      @map("passing_yards")
-  touchdowns   Int
-  interceptions Int
-  passerRating Decimal  @map("passer_rating") @db.Decimal(5, 2)
-  wins         Int?
-  losses       Int?
-  createdAt    DateTime @default(now()) @map("created_at")
+  id             Int      @id @default(autoincrement())
+  playerName     String   @map("player_name")
+  year           Int
+  team           String
+  gamesPlayed    Int      @map("games_played")
+  passAttempts   Int      @map("pass_attempts")
+  completions    Int
+  passingYards   Int      @map("passing_yards")
+  touchdowns     Int
+  interceptions  Int
+  passerRating   Decimal  @map("passer_rating") @db.Decimal(5, 2)
+  wins           Int?
+  losses         Int?
+  rushAttempts   Int      @default(0) @map("rush_attempts")
+  rushYards      Int      @default(0) @map("rush_yards")
+  rushTouchdowns Int      @default(0) @map("rush_touchdowns")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   eloRating         EloRating?
   votesAsWinner     Vote[]          @relation("WinnerVotes")

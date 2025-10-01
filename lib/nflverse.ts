@@ -24,7 +24,9 @@ export interface NFLVersePlayerStats {
   sacks_suffered: number;
   sack_yards_lost: number;
   passing_epa: number;
-  // Add more fields as needed
+  carries: number;
+  rushing_yards: number;
+  rushing_tds: number;
 }
 
 /**
@@ -108,6 +110,9 @@ function parseCSV(csvText: string): NFLVersePlayerStats[] {
           "passing_interceptions",
           "sacks_suffered",
           "sack_yards_lost",
+          "carries",
+          "rushing_yards",
+          "rushing_tds",
         ].includes(header)
       ) {
         obj[header] = value ? parseInt(value, 10) : 0;

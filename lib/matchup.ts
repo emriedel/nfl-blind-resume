@@ -129,6 +129,10 @@ export function formatSeasonForMatchup(season: QBSeasonWithElo) {
       touchdowns: season.touchdowns,
       interceptions: season.interceptions,
       passerRating: parseFloat(season.passerRating).toFixed(1),
+      rushAttempts: season.rushAttempts,
+      rushYards: season.rushYards,
+      rushTouchdowns: season.rushTouchdowns,
+      rushYardsPerAttempt: season.rushAttempts > 0 ? (season.rushYards / season.rushAttempts).toFixed(1) : "0.0",
     },
     record:
       season.wins !== null && season.losses !== null
