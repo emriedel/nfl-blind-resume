@@ -48,13 +48,13 @@ export function calculatePasserRating(
  * Filter and transform NFLverse data to QB seasons
  * Applies minimum thresholds:
  * - Position must be QB
- * - Games played >= 8
- * - Pass attempts >= 200
+ * - Games played >= 12
+ * - Pass attempts >= 300
  */
 export function filterQBSeasons(
   stats: NFLVersePlayerStats[],
-  minGames: number = 8,
-  minAttempts: number = 200
+  minGames: number = 12,
+  minAttempts: number = 300
 ): QBSeasonData[] {
   return stats
     .filter((stat) => {
@@ -97,10 +97,64 @@ export function filterQBSeasons(
 }
 
 /**
- * Calculate initial ELO rating based on passer rating
- * Formula: 1000 + (passerRating * 5)
- * This gives a range of roughly 1000-1600 for typical QB ratings
+ * Calculate initial ELO rating using a composite scoring system
+ *
+ * This algorithm considers multiple dimensions of QB performance:
+ * - Efficiency (40%): Completion %, YPA, TD rate, INT rate
+ * - Volume (20%): Yards/game, TDs/game
+ * - Dual-threat (15%): Rushing production
+ * - Ball security (15%): Turnovers and sack rate
+ * - Passer rating (10%): Official NFL rating as validation
+ *
+ * Expected range: ~1300-1900 for qualifying QB seasons
  */
-export function calculateInitialELO(passerRating: number): number {
-  return Math.round(1000 + passerRating * 5);
+export function calculateInitialELO(qb: QBSeasonData): number {
+  const BASE_ELO = 1200;
+
+  // 1. Efficiency Score (40% weight) - per-play efficiency
+  const completionPct = (qb.completions / qb.passAttempts) * 100;
+  const yardsPerAttempt = qb.passingYards / qb.passAttempts;
+  const tdRate = (qb.touchdowns / qb.passAttempts) * 100;
+  const intRate = (qb.interceptions / qb.passAttempts) * 100;
+
+  const efficiencyScore =
+    completionPct * 2 + // 60-70% = 120-140 points
+    yardsPerAttempt * 30 + // 7-8 YPA = 210-240 points
+    tdRate * 100 + // 4-5% = 400-500 points
+    (2.5 - intRate) * 100; // 1-2% INT = 150-250 points
+
+  // 2. Volume Score (20% weight) - sustained production
+  const yardsPerGame = qb.passingYards / qb.gamesPlayed;
+  const tdsPerGame = qb.touchdowns / qb.gamesPlayed;
+
+  const volumeScore = yardsPerGame * 0.8 + tdsPerGame * 50;
+
+  // 3. Dual-Threat Score (15% weight) - rushing production
+  const rushYardsPerGame = qb.rushYards / qb.gamesPlayed;
+  const rushTdValue = qb.rushTouchdowns * 30;
+
+  const dualThreatScore = rushYardsPerGame * 2 + rushTdValue;
+
+  // 4. Ball Security Score (15% weight) - penalize turnovers
+  const turnoversPerGame = (qb.interceptions + qb.fumbles) / qb.gamesPlayed;
+  const sackRate = qb.sacks / qb.passAttempts;
+
+  const ballSecurityScore =
+    (1.0 - turnoversPerGame) * 100 + (0.05 - sackRate) * 500;
+
+  // 5. Passer Rating Adjustment (10% weight) - validation layer
+  const passerRatingScore = qb.passerRating * 2;
+
+  // Weighted combination
+  const compositeScore =
+    efficiencyScore * 0.4 +
+    volumeScore * 0.2 +
+    dualThreatScore * 0.15 +
+    ballSecurityScore * 0.15 +
+    passerRatingScore * 0.1;
+
+  // Final ELO (scale composite score to reasonable range)
+  const finalElo = BASE_ELO + compositeScore * 0.5;
+
+  return Math.round(finalElo);
 }

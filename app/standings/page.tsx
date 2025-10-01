@@ -75,20 +75,27 @@ export default function StandingsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-4xl font-bold text-gray-900">
-              QB Season Rankings
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Quarterback Blind Resume
             </h1>
-            <Link
-              href="/"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
-            >
-              ← Back to Voting
-            </Link>
+            <p className="text-gray-600 mb-4">
+              All QB seasons ranked by ELO rating based on crowd-sourced votes
+            </p>
+
+            {/* Toggle between Voting and Leaderboard */}
+            <div className="flex justify-center gap-2 bg-gray-200 p-1 rounded-lg inline-flex border border-gray-300">
+              <Link
+                href="/"
+                className="text-gray-600 hover:text-gray-900 font-semibold px-6 py-2 rounded-md transition-colors"
+              >
+                Vote
+              </Link>
+              <div className="bg-blue-600 text-white font-semibold px-6 py-2 rounded-md">
+                Leaderboard
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600">
-            All QB seasons ranked by ELO rating based on crowd-sourced votes
-          </p>
         </div>
 
         {/* Filters */}

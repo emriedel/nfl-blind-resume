@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 
 interface Stats {
   gamesPlayed: number;
@@ -42,15 +41,51 @@ type VoteResult = {
   loser: Season;
 };
 
+interface Standing {
+  rank: number;
+  id: number;
+  playerName: string;
+  year: number;
+  team: string;
+  eloScore: number;
+  voteCount: number;
+  stats: Stats;
+  record: string | null;
+}
+
+interface StandingsData {
+  standings: Standing[];
+  total: number;
+  filters: {
+    years: number[];
+    teams: string[];
+  };
+}
+
+type View = "vote" | "leaderboard";
+
 export default function Home() {
+  const [view, setView] = useState<View>("vote");
   const [matchup, setMatchup] = useState<Matchup | null>(null);
   const [voteResult, setVoteResult] = useState<VoteResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(false);
 
+  // Leaderboard state
+  const [standingsData, setStandingsData] = useState<StandingsData | null>(null);
+  const [standingsLoading, setStandingsLoading] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedTeam, setSelectedTeam] = useState<string>("");
+
   useEffect(() => {
     fetchMatchup();
   }, []);
+
+  useEffect(() => {
+    if (view === "leaderboard") {
+      fetchStandings();
+    }
+  }, [view, selectedYear, selectedTeam]);
 
   const fetchMatchup = async () => {
     setLoading(true);
@@ -63,6 +98,23 @@ export default function Home() {
       console.error("Failed to fetch matchup:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStandings = async () => {
+    setStandingsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedYear) params.append("year", selectedYear);
+      if (selectedTeam) params.append("team", selectedTeam);
+
+      const response = await fetch(`/api/standings?${params.toString()}`);
+      const result = await response.json();
+      setStandingsData(result);
+    } catch (error) {
+      console.error("Failed to fetch standings:", error);
+    } finally {
+      setStandingsLoading(false);
     }
   };
 
@@ -87,254 +139,445 @@ export default function Home() {
     fetchMatchup();
   };
 
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-xl text-gray-400">Loading matchup...</div>
-      </main>
-    );
-  }
-
-  if (!matchup) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-xl text-red-400">Failed to load matchup</div>
-      </main>
-    );
-  }
-
-  const seasonA = voteResult
+  const seasonA = matchup && voteResult
     ? voteResult.winner.id === matchup.seasonA.id
       ? voteResult.winner
       : voteResult.loser
-    : matchup.seasonA;
+    : matchup?.seasonA;
 
-  const seasonB = voteResult
+  const seasonB = matchup && voteResult
     ? voteResult.winner.id === matchup.seasonB.id
       ? voteResult.winner
       : voteResult.loser
-    : matchup.seasonB;
+    : matchup?.seasonB;
 
-  const isWinnerA = voteResult?.winner.id === matchup.seasonA.id;
-  const isWinnerB = voteResult?.winner.id === matchup.seasonB.id;
+  const isWinnerA = voteResult && matchup && voteResult.winner.id === matchup.seasonA.id;
+  const isWinnerB = voteResult && matchup && voteResult.winner.id === matchup.seasonB.id;
 
   return (
     <main className="min-h-screen bg-gray-900 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className={view === "vote" ? "max-w-4xl mx-auto" : "max-w-7xl mx-auto"}>
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex justify-end mb-4">
-            <Link
-              href="/standings"
-              className="text-blue-400 hover:text-blue-300 font-semibold"
-            >
-              View Rankings →
-            </Link>
-          </div>
           <h1 className="text-4xl font-bold text-white mb-2">
-            QB Blind Resume
+            Quarterback Blind Resume
           </h1>
           <p className="text-gray-400 mb-4">
-            Which quarterback season was better? Vote based on stats alone.
+            {view === "vote"
+              ? "Which quarterback season was better? Vote based on stats alone."
+              : "All QB seasons ranked by ELO rating based on crowd-sourced votes"}
           </p>
-        </div>
 
-        {/* Comparison Table */}
-        <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700">
-          <table className="w-full">
-            <thead className="bg-gray-700">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-200">
-                  {voteResult && seasonA.playerName ? (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold text-white animate-fade-in">
-                        {seasonA.playerName}
-                      </div>
-                      {seasonA.eloChange !== undefined && (
-                        <div className="text-xs">
-                          <span className="text-gray-400">ELO: {seasonA.newElo}</span>{" "}
-                          <span
-                            className={`font-semibold ${
-                              seasonA.eloChange > 0 ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
-                            ({seasonA.eloChange > 0 ? "+" : ""}
-                            {seasonA.eloChange})
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-2xl font-bold text-white">Player A</div>
-                  )}
-                  <div className="text-sm font-normal text-gray-400 mt-1">
-                    {seasonA.year}
-                    {voteResult && ` • ${seasonA.team}`}
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-center text-sm font-semibold text-gray-200 w-32">
-                  Stat
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-200">
-                  {voteResult && seasonB.playerName ? (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold text-white animate-fade-in">
-                        {seasonB.playerName}
-                      </div>
-                      {seasonB.eloChange !== undefined && (
-                        <div className="text-xs">
-                          <span className="text-gray-400">ELO: {seasonB.newElo}</span>{" "}
-                          <span
-                            className={`font-semibold ${
-                              seasonB.eloChange > 0 ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
-                            ({seasonB.eloChange > 0 ? "+" : ""}
-                            {seasonB.eloChange})
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-2xl font-bold text-white">Player B</div>
-                  )}
-                  <div className="text-sm font-normal text-gray-400 mt-1">
-                    {seasonB.year}
-                    {voteResult && ` • ${seasonB.team}`}
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              <StatRow
-                label="Games"
-                valueA={seasonA.stats.gamesPlayed}
-                valueB={seasonB.stats.gamesPlayed}
-              />
-              <StatRow
-                label="Comp %"
-                valueA={`${seasonA.stats.completionPct}%`}
-                valueB={`${seasonB.stats.completionPct}%`}
-                numA={parseFloat(seasonA.stats.completionPct)}
-                numB={parseFloat(seasonB.stats.completionPct)}
-              />
-              <StatRow
-                label="Pass Yds"
-                valueA={seasonA.stats.passingYards.toLocaleString()}
-                valueB={seasonB.stats.passingYards.toLocaleString()}
-                numA={seasonA.stats.passingYards}
-                numB={seasonB.stats.passingYards}
-              />
-              <StatRow
-                label="Pass YPA"
-                valueA={(seasonA.stats.passingYards / seasonA.stats.attempts).toFixed(1)}
-                valueB={(seasonB.stats.passingYards / seasonB.stats.attempts).toFixed(1)}
-                numA={seasonA.stats.passingYards / seasonA.stats.attempts}
-                numB={seasonB.stats.passingYards / seasonB.stats.attempts}
-              />
-              <StatRow
-                label="Pass TD"
-                valueA={seasonA.stats.touchdowns}
-                valueB={seasonB.stats.touchdowns}
-                numA={seasonA.stats.touchdowns}
-                numB={seasonB.stats.touchdowns}
-              />
-              <StatRow
-                label="Int"
-                valueA={seasonA.stats.interceptions}
-                valueB={seasonB.stats.interceptions}
-                numA={seasonA.stats.interceptions}
-                numB={seasonB.stats.interceptions}
-                lowerIsBetter
-              />
-              <StatRow
-                label="Rating"
-                valueA={seasonA.stats.passerRating}
-                valueB={seasonB.stats.passerRating}
-                numA={parseFloat(seasonA.stats.passerRating)}
-                numB={parseFloat(seasonB.stats.passerRating)}
-              />
-              <StatRow
-                label="Sacks"
-                valueA={seasonA.stats.sacks}
-                valueB={seasonB.stats.sacks}
-                numA={seasonA.stats.sacks}
-                numB={seasonB.stats.sacks}
-                lowerIsBetter
-              />
-              <StatRow
-                label="Fumbles"
-                valueA={seasonA.stats.fumbles}
-                valueB={seasonB.stats.fumbles}
-                numA={seasonA.stats.fumbles}
-                numB={seasonB.stats.fumbles}
-                lowerIsBetter
-              />
-              <StatRow
-                label="Rush Yds"
-                valueA={seasonA.stats.rushYards}
-                valueB={seasonB.stats.rushYards}
-                numA={seasonA.stats.rushYards}
-                numB={seasonB.stats.rushYards}
-              />
-              <StatRow
-                label="Rush TD"
-                valueA={seasonA.stats.rushTouchdowns}
-                valueB={seasonB.stats.rushTouchdowns}
-                numA={seasonA.stats.rushTouchdowns}
-                numB={seasonB.stats.rushTouchdowns}
-              />
-            </tbody>
-          </table>
-        </div>
-
-        {/* Vote Buttons */}
-        {!voteResult && (
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* Toggle between Voting and Leaderboard */}
+          <div className="flex justify-center gap-2 bg-gray-800 p-1 rounded-lg inline-flex border border-gray-700">
             <button
-              onClick={() => handleVote(matchup.seasonA.id, matchup.seasonB.id)}
-              disabled={voting}
-              className={`py-4 px-6 rounded-lg font-semibold text-lg transition-colors ${
-                voting
-                  ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setView("vote")}
+              className={`font-semibold px-6 py-2 rounded-md transition-colors ${
+                view === "vote"
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
-              {voting ? "Voting..." : "Vote for Player A"}
+              Vote
             </button>
             <button
-              onClick={() => handleVote(matchup.seasonB.id, matchup.seasonA.id)}
-              disabled={voting}
-              className={`py-4 px-6 rounded-lg font-semibold text-lg transition-colors ${
-                voting
-                  ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setView("leaderboard")}
+              className={`font-semibold px-6 py-2 rounded-md transition-colors ${
+                view === "leaderboard"
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
-              {voting ? "Voting..." : "Vote for Player B"}
+              Leaderboard
             </button>
           </div>
+        </div>
+
+        {/* Vote View */}
+        {view === "vote" && (
+          <>
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-xl text-gray-400">Loading matchup...</div>
+              </div>
+            ) : !matchup || !seasonA || !seasonB ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-xl text-red-400">Failed to load matchup</div>
+              </div>
+            ) : (
+              <>
+                {/* Comparison Table */}
+                <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700 max-w-3xl mx-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-700">
+                      <tr>
+                        <th
+                          className={`px-6 py-4 text-right text-sm font-semibold text-gray-200 ${
+                            !voteResult ? 'cursor-pointer hover:bg-blue-600 hover:shadow-lg transition-all' : ''
+                          }`}
+                          onClick={() => !voteResult && !voting && handleVote(matchup.seasonA.id, matchup.seasonB.id)}
+                        >
+                          {voteResult && seasonA.playerName ? (
+                            <div className="space-y-1">
+                              <div className="text-2xl font-bold text-white animate-fade-in">
+                                {seasonA.playerName}
+                              </div>
+                              {seasonA.eloChange !== undefined && (
+                                <div className="text-xs">
+                                  <span className="text-gray-400">ELO: {seasonA.newElo}</span>{" "}
+                                  <span
+                                    className={`font-semibold ${
+                                      seasonA.eloChange > 0 ? "text-green-400" : "text-red-400"
+                                    }`}
+                                  >
+                                    ({seasonA.eloChange > 0 ? "+" : ""}
+                                    {seasonA.eloChange})
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-2xl font-bold text-white flex items-center justify-end gap-2">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                              QB A
+                            </div>
+                          )}
+                          <div className="text-sm font-normal text-gray-400 mt-1">
+                            {seasonA.year}
+                            {voteResult && ` • ${seasonA.team}`}
+                          </div>
+                        </th>
+                        <th className="px-4 py-4 text-center text-sm font-semibold text-gray-200 w-32">
+
+                        </th>
+                        <th
+                          className={`px-6 py-4 text-left text-sm font-semibold text-gray-200 ${
+                            !voteResult ? 'cursor-pointer hover:bg-blue-600 hover:shadow-lg transition-all' : ''
+                          }`}
+                          onClick={() => !voteResult && !voting && handleVote(matchup.seasonB.id, matchup.seasonA.id)}
+                        >
+                          {voteResult && seasonB.playerName ? (
+                            <div className="space-y-1">
+                              <div className="text-2xl font-bold text-white animate-fade-in">
+                                {seasonB.playerName}
+                              </div>
+                              {seasonB.eloChange !== undefined && (
+                                <div className="text-xs">
+                                  <span className="text-gray-400">ELO: {seasonB.newElo}</span>{" "}
+                                  <span
+                                    className={`font-semibold ${
+                                      seasonB.eloChange > 0 ? "text-green-400" : "text-red-400"
+                                    }`}
+                                  >
+                                    ({seasonB.eloChange > 0 ? "+" : ""}
+                                    {seasonB.eloChange})
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-2xl font-bold text-white flex items-center justify-start gap-2">
+                              QB B
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          )}
+                          <div className="text-sm font-normal text-gray-400 mt-1">
+                            {seasonB.year}
+                            {voteResult && ` • ${seasonB.team}`}
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                      <StatRow
+                        label="Games"
+                        valueA={seasonA.stats.gamesPlayed}
+                        valueB={seasonB.stats.gamesPlayed}
+                      />
+                      <StatRow
+                        label="Comp %"
+                        valueA={`${seasonA.stats.completionPct}%`}
+                        valueB={`${seasonB.stats.completionPct}%`}
+                        numA={parseFloat(seasonA.stats.completionPct)}
+                        numB={parseFloat(seasonB.stats.completionPct)}
+                      />
+                      <StatRow
+                        label="Pass Yds"
+                        valueA={seasonA.stats.passingYards.toLocaleString()}
+                        valueB={seasonB.stats.passingYards.toLocaleString()}
+                        numA={seasonA.stats.passingYards}
+                        numB={seasonB.stats.passingYards}
+                      />
+                      <StatRow
+                        label="Pass YPA"
+                        valueA={(seasonA.stats.passingYards / seasonA.stats.attempts).toFixed(1)}
+                        valueB={(seasonB.stats.passingYards / seasonB.stats.attempts).toFixed(1)}
+                        numA={seasonA.stats.passingYards / seasonA.stats.attempts}
+                        numB={seasonB.stats.passingYards / seasonB.stats.attempts}
+                      />
+                      <StatRow
+                        label="Pass TD"
+                        valueA={seasonA.stats.touchdowns}
+                        valueB={seasonB.stats.touchdowns}
+                        numA={seasonA.stats.touchdowns}
+                        numB={seasonB.stats.touchdowns}
+                      />
+                      <StatRow
+                        label="Int"
+                        valueA={seasonA.stats.interceptions}
+                        valueB={seasonB.stats.interceptions}
+                        numA={seasonA.stats.interceptions}
+                        numB={seasonB.stats.interceptions}
+                        lowerIsBetter
+                      />
+                      <StatRow
+                        label="Rating"
+                        valueA={seasonA.stats.passerRating}
+                        valueB={seasonB.stats.passerRating}
+                        numA={parseFloat(seasonA.stats.passerRating)}
+                        numB={parseFloat(seasonB.stats.passerRating)}
+                      />
+                      <StatRow
+                        label="Sacks"
+                        valueA={seasonA.stats.sacks}
+                        valueB={seasonB.stats.sacks}
+                        numA={seasonA.stats.sacks}
+                        numB={seasonB.stats.sacks}
+                        lowerIsBetter
+                      />
+                      <StatRow
+                        label="Fumbles"
+                        valueA={seasonA.stats.fumbles}
+                        valueB={seasonB.stats.fumbles}
+                        numA={seasonA.stats.fumbles}
+                        numB={seasonB.stats.fumbles}
+                        lowerIsBetter
+                      />
+                      <StatRow
+                        label="Rush Yds"
+                        valueA={seasonA.stats.rushYards}
+                        valueB={seasonB.stats.rushYards}
+                        numA={seasonA.stats.rushYards}
+                        numB={seasonB.stats.rushYards}
+                      />
+                      <StatRow
+                        label="Rush TD"
+                        valueA={seasonA.stats.rushTouchdowns}
+                        valueB={seasonB.stats.rushTouchdowns}
+                        numA={seasonA.stats.rushTouchdowns}
+                        numB={seasonB.stats.rushTouchdowns}
+                      />
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Voting indicator */}
+                {!voteResult && voting && (
+                  <div className="text-center mb-6 text-gray-400">
+                    Voting...
+                  </div>
+                )}
+
+                {/* Winner Badge */}
+                {voteResult && (
+                  <div className="text-center mb-6">
+                    <div className="inline-block bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-lg">
+                      ✓ You picked {isWinnerA ? seasonA.playerName : seasonB.playerName}!
+                    </div>
+                  </div>
+                )}
+
+                {/* Next Matchup Button */}
+                {voteResult && (
+                  <div className="text-center">
+                    <button
+                      onClick={handleNextMatchup}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+                    >
+                      Next Matchup →
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
 
-        {/* Winner Badge */}
-        {voteResult && (
-          <div className="text-center mb-6">
-            <div className="inline-block bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-lg">
-              ✓ You picked {isWinnerA ? seasonA.playerName : seasonB.playerName}!
-            </div>
-          </div>
-        )}
+        {/* Leaderboard View */}
+        {view === "leaderboard" && (
+          <>
+            {standingsLoading && !standingsData ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-xl text-gray-400">Loading standings...</div>
+              </div>
+            ) : standingsData ? (
+              <>
+                {/* Filters */}
+                <div className="bg-gray-800 rounded-lg shadow p-4 mb-6 flex flex-wrap gap-4 border border-gray-700">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Filter by Year
+                    </label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      className="border border-gray-600 bg-gray-700 text-white rounded-lg px-4 py-2"
+                    >
+                      <option value="">All Years</option>
+                      {standingsData.filters.years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-        {/* Next Matchup Button */}
-        {voteResult && (
-          <div className="text-center">
-            <button
-              onClick={handleNextMatchup}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
-            >
-              Next Matchup →
-            </button>
-          </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Filter by Team
+                    </label>
+                    <select
+                      value={selectedTeam}
+                      onChange={(e) => setSelectedTeam(e.target.value)}
+                      className="border border-gray-600 bg-gray-700 text-white rounded-lg px-4 py-2"
+                    >
+                      <option value="">All Teams</option>
+                      {standingsData.filters.teams.map((team) => (
+                        <option key={team} value={team}>
+                          {team}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {(selectedYear || selectedTeam) && (
+                    <div className="flex items-end">
+                      <button
+                        onClick={() => {
+                          setSelectedYear("");
+                          setSelectedTeam("");
+                        }}
+                        className="text-sm text-blue-400 hover:text-blue-300 font-medium"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Results Count */}
+                <div className="mb-4 text-gray-400">
+                  Showing {standingsData.standings.length} of {standingsData.total} seasons
+                </div>
+
+                {/* Standings Table */}
+                <div className="bg-gray-800 rounded-lg shadow overflow-hidden border border-gray-700">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-700">
+                      <thead className="bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Rank
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Player
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Year
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Team
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            ELO
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Votes
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Yards
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            TD
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            INT
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Rating
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-gray-800 divide-y divide-gray-700">
+                        {standingsData.standings.map((standing, index) => (
+                          <tr
+                            key={standing.id}
+                            className={index < 3 ? "bg-gray-750 hover:bg-gray-700" : "hover:bg-gray-750"}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <span
+                                  className={`text-lg font-bold ${
+                                    index === 0
+                                      ? "text-yellow-400"
+                                      : index === 1
+                                      ? "text-gray-300"
+                                      : index === 2
+                                      ? "text-orange-400"
+                                      : "text-gray-100"
+                                  }`}
+                                >
+                                  {standing.rank}
+                                  {index === 0 && " 🥇"}
+                                  {index === 1 && " 🥈"}
+                                  {index === 2 && " 🥉"}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-100">
+                                {standing.playerName}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {standing.year}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {standing.team}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-semibold text-blue-400">
+                                {standing.eloScore}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                              {standing.voteCount}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {standing.stats.passingYards.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {standing.stats.touchdowns}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {standing.stats.interceptions}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {standing.stats.passerRating}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </>
         )}
       </div>
     </main>

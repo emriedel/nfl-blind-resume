@@ -21,8 +21,8 @@ A web application that allows users to compare NFL quarterback seasons in a blin
 ## Data Requirements
 
 ### QB Season Filters
-- Minimum 8 games played
-- Minimum 200 pass attempts
+- Minimum 12 games played
+- Minimum 300 pass attempts
 - Regular season stats only
 
 ### Required Stats to Display
@@ -65,7 +65,7 @@ A web application that allows users to compare NFL quarterback seasons in a blin
 2. **elo_ratings**
    - id (PK)
    - season_id (FK → qb_seasons)
-   - elo_score (default: seeded by passer rating heuristic)
+   - elo_score (default: seeded by composite scoring algorithm)
    - vote_count
    - last_updated
 
@@ -128,13 +128,19 @@ A web application that allows users to compare NFL quarterback seasons in a blin
 ```
 
 ## ELO Algorithm Details
-- Initial seeding: Based on passer rating (e.g., `initialELO = 1000 + (passerRating * 5)`)
-- K-factor: 32 (standard chess value)
-- Formula:
+- **Initial seeding**: Composite scoring system that considers:
+  - Efficiency (40%): Completion %, YPA, TD rate, INT rate
+  - Volume (20%): Yards/game, TDs/game
+  - Dual-threat (15%): Rushing production (yards/game, rush TDs)
+  - Ball security (15%): Turnovers/game, sack rate
+  - Passer rating (10%): Official NFL rating as validation layer
+  - Expected range: ~1300-1900 for qualifying seasons
+- **K-factor**: 32 (standard chess value)
+- **Update formula**:
   - Expected score: `E_A = 1 / (1 + 10^((R_B - R_A)/400))`
   - New rating: `R_A_new = R_A + K * (S_A - E_A)`
   - Where S_A = 1 for win, 0 for loss
-- No decay over time
+- **No decay over time**
 
 ## UI/UX Requirements
 - **Side-by-side comparison**: Works on desktop and mobile

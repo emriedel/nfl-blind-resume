@@ -22,8 +22,8 @@ async function seed() {
     console.log(`✅ Fetched ${allStats.length} player season records\n`);
 
     // Step 2: Filter to QB seasons meeting our criteria
-    console.log("🎯 Filtering QB seasons (8+ games, 200+ attempts)...");
-    const qbSeasons = filterQBSeasons(allStats, 8, 200);
+    console.log("🎯 Filtering QB seasons (12+ games, 300+ attempts)...");
+    const qbSeasons = filterQBSeasons(allStats, 12, 300);
     console.log(`✅ Found ${qbSeasons.length} qualifying QB seasons\n`);
 
     // Step 3: Clear existing data
@@ -64,7 +64,7 @@ async function seed() {
         });
 
         // Create initial ELO rating
-        const initialELO = calculateInitialELO(qb.passerRating);
+        const initialELO = calculateInitialELO(qb);
         await prisma.eloRating.create({
           data: {
             seasonId: season.id,
