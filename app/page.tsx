@@ -746,37 +746,50 @@ function StatRow({
   numB?: number;
   lowerIsBetter?: boolean;
 }) {
-  // Calculate if there's a significant difference (>15%)
-  let highlightA = false;
-  let highlightB = false;
+  // Stat-specific thresholds based on ~0.33 IQR from dataset analysis
+  const THRESHOLDS: Record<string, number> = {
+    'Comp %': 2.0,          // ~0.33 IQR (completion percentage points)
+    'Pass Yds': 350,        // ~0.33 IQR (yards)
+    'Pass YPA': 0.32,       // ~0.33 IQR (yards per attempt)
+    'Pass TD': 3.6,         // ~0.33 IQR (touchdowns)
+    'Int': 1.7,             // ~0.33 IQR (interceptions) - lower is better
+    'Rating': 5.4,          // ~0.33 IQR (passer rating points)
+    'Sacks': 4.3,           // ~0.33 IQR (sacks) - lower is better
+    'Fumbles': 1,           // ~0.33 IQR (fumbles) - lower is better
+    'Rush Yds': 66,         // ~0.33 IQR (rushing yards)
+    'Rush TD': 1,           // ~0.33 IQR (rush touchdowns)
+  };
 
-  if (numA !== undefined && numB !== undefined && numA !== 0 && numB !== 0) {
-    const percentDiff = Math.abs((numA - numB) / Math.max(numA, numB));
+  // Calculate if there's a significant difference
+  let colorA = "text-gray-100";
+  let colorB = "text-gray-100";
 
-    if (percentDiff > 0.15) {
+  if (numA !== undefined && numB !== undefined) {
+    const diff = Math.abs(numA - numB);
+    const threshold = THRESHOLDS[label];
+
+    if (threshold !== undefined && diff >= threshold) {
       if (lowerIsBetter) {
-        highlightA = numA < numB;
-        highlightB = numB < numA;
+        // For negative stats (Int, Sacks, Fumbles), highlight the HIGHER (worse) value in red
+        colorA = numA > numB ? "text-red-400" : "text-gray-100";
+        colorB = numB > numA ? "text-red-400" : "text-gray-100";
       } else {
-        highlightA = numA > numB;
-        highlightB = numB > numA;
+        // For positive stats, highlight the HIGHER (better) value in green
+        colorA = numA > numB ? "text-green-400" : "text-gray-100";
+        colorB = numB > numA ? "text-green-400" : "text-gray-100";
       }
     }
   }
 
   return (
     <tr className="hover:bg-gray-750">
-      <td className={`px-6 py-3 text-right font-semibold ${
-        highlightA ? "text-green-400" : "text-gray-100"
-      }`}>
+      <td className={`px-6 py-3 text-right font-semibold ${colorA}`}>
         {valueA}
       </td>
       <td className="px-4 py-3 text-center text-sm text-gray-400 bg-gray-700">
         {label}
       </td>
-      <td className={`px-6 py-3 text-left font-semibold ${
-        highlightB ? "text-green-400" : "text-gray-100"
-      }`}>
+      <td className={`px-6 py-3 text-left font-semibold ${colorB}`}>
         {valueB}
       </td>
     </tr>
