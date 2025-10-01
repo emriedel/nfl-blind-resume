@@ -5,9 +5,7 @@
  * Usage: DATABASE_URL=<production-url> tsx lib/scripts/seed-production.ts
  */
 
-import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../generated/prisma";
-import { Pool } from "@neondatabase/serverless";
 import { fetchMultipleSeasons } from "../nflverse";
 import { filterQBSeasons, calculateInitialELO } from "../qb-utils";
 
@@ -21,10 +19,14 @@ async function seedProduction() {
     throw new Error("DATABASE_URL environment variable is required");
   }
 
-  // Create Neon-compatible Prisma client
-  const pool = new Pool({ connectionString: DATABASE_URL });
-  const adapter = new PrismaNeon(pool);
-  const prisma = new PrismaClient({ adapter });
+  console.log("Connecting to database...");
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: DATABASE_URL,
+      },
+    },
+  });
 
   console.log("🏈 Starting production QB data seeding...\n");
 
@@ -124,7 +126,6 @@ async function seedProduction() {
     throw error;
   } finally {
     await prisma.$disconnect();
-    await pool.end();
   }
 }
 
