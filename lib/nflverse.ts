@@ -27,6 +27,7 @@ export interface NFLVersePlayerStats {
   carries: number;
   rushing_yards: number;
   rushing_tds: number;
+  rushing_fumbles_lost: number;
 }
 
 /**
@@ -113,6 +114,7 @@ function parseCSV(csvText: string): NFLVersePlayerStats[] {
           "carries",
           "rushing_yards",
           "rushing_tds",
+          "rushing_fumbles_lost",
         ].includes(header)
       ) {
         obj[header] = value ? parseInt(value, 10) : 0;

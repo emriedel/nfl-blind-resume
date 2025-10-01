@@ -22,6 +22,8 @@ export interface QBSeasonWithElo {
   rushAttempts: number;
   rushYards: number;
   rushTouchdowns: number;
+  sacks: number;
+  fumbles: number;
   wins: number | null;
   losses: number | null;
   eloRating: {
@@ -136,6 +138,8 @@ export function formatSeasonForMatchup(season: QBSeasonWithElo) {
       rushYards: season.rushYards,
       rushTouchdowns: season.rushTouchdowns,
       rushYardsPerAttempt: season.rushAttempts > 0 ? (season.rushYards / season.rushAttempts).toFixed(1) : "0.0",
+      sacks: season.sacks,
+      fumbles: season.fumbles,
     },
     record:
       season.wins !== null && season.losses !== null

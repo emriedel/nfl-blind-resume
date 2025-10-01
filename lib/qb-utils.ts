@@ -14,6 +14,8 @@ export interface QBSeasonData {
   rushAttempts: number;
   rushYards: number;
   rushTouchdowns: number;
+  sacks: number;
+  fumbles: number;
   wins?: number;
   losses?: number;
 }
@@ -85,6 +87,8 @@ export function filterQBSeasons(
         rushAttempts: stat.carries || 0,
         rushYards: stat.rushing_yards || 0,
         rushTouchdowns: stat.rushing_tds || 0,
+        sacks: stat.sacks_suffered || 0,
+        fumbles: stat.rushing_fumbles_lost || 0,
         // Note: Win/loss data not in this dataset, will be null
         wins: undefined,
         losses: undefined,

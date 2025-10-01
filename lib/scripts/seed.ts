@@ -56,6 +56,8 @@ async function seed() {
             rushAttempts: qb.rushAttempts,
             rushYards: qb.rushYards,
             rushTouchdowns: qb.rushTouchdowns,
+            sacks: qb.sacks,
+            fumbles: qb.fumbles,
             wins: qb.wins || null,
             losses: qb.losses || null,
           },

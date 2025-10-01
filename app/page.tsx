@@ -16,6 +16,8 @@ interface Stats {
   rushYards: number;
   rushTouchdowns: number;
   rushYardsPerAttempt: string;
+  sacks: number;
+  fumbles: number;
 }
 
 interface Season {
@@ -210,13 +212,6 @@ export default function Home() {
                 valueB={seasonB.stats.gamesPlayed}
               />
               <StatRow
-                label="Comp/Att"
-                valueA={`${seasonA.stats.completions}/${seasonA.stats.attempts}`}
-                valueB={`${seasonB.stats.completions}/${seasonB.stats.attempts}`}
-                numA={seasonA.stats.completions / seasonA.stats.attempts}
-                numB={seasonB.stats.completions / seasonB.stats.attempts}
-              />
-              <StatRow
                 label="Comp %"
                 valueA={`${seasonA.stats.completionPct}%`}
                 valueB={`${seasonB.stats.completionPct}%`}
@@ -260,11 +255,20 @@ export default function Home() {
                 numB={parseFloat(seasonB.stats.passerRating)}
               />
               <StatRow
-                label="Rush Att"
-                valueA={seasonA.stats.rushAttempts}
-                valueB={seasonB.stats.rushAttempts}
-                numA={seasonA.stats.rushAttempts}
-                numB={seasonB.stats.rushAttempts}
+                label="Sacks"
+                valueA={seasonA.stats.sacks}
+                valueB={seasonB.stats.sacks}
+                numA={seasonA.stats.sacks}
+                numB={seasonB.stats.sacks}
+                lowerIsBetter
+              />
+              <StatRow
+                label="Fumbles"
+                valueA={seasonA.stats.fumbles}
+                valueB={seasonB.stats.fumbles}
+                numA={seasonA.stats.fumbles}
+                numB={seasonB.stats.fumbles}
+                lowerIsBetter
               />
               <StatRow
                 label="Rush Yds"
@@ -272,13 +276,6 @@ export default function Home() {
                 valueB={seasonB.stats.rushYards}
                 numA={seasonA.stats.rushYards}
                 numB={seasonB.stats.rushYards}
-              />
-              <StatRow
-                label="Rush YPA"
-                valueA={seasonA.stats.rushYardsPerAttempt}
-                valueB={seasonB.stats.rushYardsPerAttempt}
-                numA={parseFloat(seasonA.stats.rushYardsPerAttempt)}
-                numB={parseFloat(seasonB.stats.rushYardsPerAttempt)}
               />
               <StatRow
                 label="Rush TD"

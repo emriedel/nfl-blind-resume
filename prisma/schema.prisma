@@ -26,6 +26,8 @@ model QBSeason {
   rushAttempts   Int      @default(0) @map("rush_attempts")
   rushYards      Int      @default(0) @map("rush_yards")
   rushTouchdowns Int      @default(0) @map("rush_touchdowns")
+  sacks          Int      @default(0)
+  fumbles        Int      @default(0)
   createdAt      DateTime @default(now()) @map("created_at")
 
   eloRating         EloRating?
