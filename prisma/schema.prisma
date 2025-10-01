@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model QBSeason {
+  id           Int      @id @default(autoincrement())
+  playerName   String   @map("player_name")
+  year         Int
+  team         String
+  gamesPlayed  Int      @map("games_played")
+  passAttempts Int      @map("pass_attempts")
+  completions  Int
+  passingYards Int      @map("passing_yards")
+  touchdowns   Int
+  interceptions Int
+  passerRating Decimal  @map("passer_rating") @db.Decimal(5, 2)
+  wins         Int?
+  losses       Int?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  eloRating         EloRating?
+  votesAsWinner     Vote[]          @relation("WinnerVotes")
+  votesAsLoser      Vote[]          @relation("LoserVotes")
+  matchupsAsSeasonA MatchupHistory[] @relation("SeasonAMatchups")
+  matchupsAsSeasonB MatchupHistory[] @relation("SeasonBMatchups")
+
+  @@map("qb_seasons")
+}
+
+model EloRating {
+  id          Int      @id @default(autoincrement())
+  seasonId    Int      @unique @map("season_id")
+  eloScore    Decimal  @default(1500) @map("elo_score") @db.Decimal(8, 2)
+  voteCount   Int      @default(0) @map("vote_count")
+  lastUpdated DateTime @default(now()) @updatedAt @map("last_updated")
+
+  season QBSeason @relation(fields: [seasonId], references: [id])
+
+  @@map("elo_ratings")
+}
+
+model UserSession {
+  id        Int      @id @default(autoincrement())
+  sessionId String   @unique @map("session_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  votes           Vote[]
+  matchupHistory  MatchupHistory[]
+
+  @@map("user_sessions")
+}
+
+model Vote {
+  id             Int      @id @default(autoincrement())
+  sessionId      String   @map("session_id") @db.Uuid
+  winnerSeasonId Int      @map("winner_season_id")
+  loserSeasonId  Int      @map("loser_season_id")
+  timestamp      DateTime @default(now())
+
+  session       UserSession @relation(fields: [sessionId], references: [sessionId])
+  winnerSeason  QBSeason    @relation("WinnerVotes", fields: [winnerSeasonId], references: [id])
+  loserSeason   QBSeason    @relation("LoserVotes", fields: [loserSeasonId], references: [id])
+
+  @@map("votes")
+}
+
+model MatchupHistory {
+  id        Int      @id @default(autoincrement())
+  sessionId String   @map("session_id") @db.Uuid
+  seasonAId Int      @map("season_a_id")
+  seasonBId Int      @map("season_b_id")
+  shownAt   DateTime @default(now()) @map("shown_at")
+
+  session  UserSession @relation(fields: [sessionId], references: [sessionId])
+  seasonA  QBSeason    @relation("SeasonAMatchups", fields: [seasonAId], references: [id])
+  seasonB  QBSeason    @relation("SeasonBMatchups", fields: [seasonBId], references: [id])
+
+  @@map("matchup_history")
+}
