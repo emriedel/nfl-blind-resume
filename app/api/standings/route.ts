@@ -23,21 +23,16 @@ export async function GET(request: NextRequest) {
       where.team = team;
     }
 
-    // Get total count for pagination
-    const total = await prisma.qBSeason.count({ where });
-
-    // Fetch QB seasons with ELO ratings
-    const seasons = await prisma.qBSeason.findMany({
+    // Fetch ALL QB seasons with ELO ratings and sort them first
+    const allSeasons = await prisma.qBSeason.findMany({
       where,
       include: {
         eloRating: true,
       },
-      take: limit ? parseInt(limit) : 100,
-      skip: offset ? parseInt(offset) : 0,
     });
 
-    // Sort by ELO rating (descending)
-    const sortedSeasons = seasons
+    // Sort by ELO rating (descending) across ALL records
+    const sortedSeasons = allSeasons
       .filter((s) => s.eloRating !== null)
       .sort((a, b) => {
         const eloA = parseFloat(a.eloRating!.eloScore.toString());
@@ -45,8 +40,17 @@ export async function GET(request: NextRequest) {
         return eloB - eloA;
       });
 
-    // Add rank
-    const rankedSeasons = sortedSeasons.map((season, index) => ({
+    // Get total count
+    const total = sortedSeasons.length;
+
+    // Apply pagination AFTER sorting
+    const paginatedSeasons = sortedSeasons.slice(
+      offset ? parseInt(offset) : 0,
+      (offset ? parseInt(offset) : 0) + (limit ? parseInt(limit) : 100)
+    );
+
+    // Add rank based on global position
+    const rankedSeasons = paginatedSeasons.map((season, index) => ({
       rank: (offset ? parseInt(offset) : 0) + index + 1,
       id: season.id,
       playerName: season.playerName,
@@ -63,9 +67,14 @@ export async function GET(request: NextRequest) {
           100
         ).toFixed(1),
         passingYards: season.passingYards,
+        passYPA: (season.passingYards / season.passAttempts).toFixed(1),
         touchdowns: season.touchdowns,
         interceptions: season.interceptions,
         passerRating: parseFloat(season.passerRating.toString()).toFixed(1),
+        sacks: season.sacks || 0,
+        fumbles: season.fumbles || 0,
+        rushYards: season.rushYards || 0,
+        rushTouchdowns: season.rushTouchdowns || 0,
       },
       record:
         season.wins !== null && season.losses !== null
@@ -74,7 +83,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get unique years and teams for filters
-    const allSeasons = await prisma.qBSeason.findMany({
+    const filterOptions = await prisma.qBSeason.findMany({
       select: {
         year: true,
         team: true,
@@ -83,10 +92,10 @@ export async function GET(request: NextRequest) {
       orderBy: [{ year: "desc" }, { team: "asc" }],
     });
 
-    const years = [...new Set(allSeasons.map((s) => s.year))].sort(
+    const years = [...new Set(filterOptions.map((s) => s.year))].sort(
       (a, b) => b - a
     );
-    const teams = [...new Set(allSeasons.map((s) => s.team))].sort();
+    const teams = [...new Set(filterOptions.map((s) => s.team))].sort();
 
     return NextResponse.json({
       standings: rankedSeasons,
