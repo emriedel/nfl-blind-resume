@@ -216,14 +216,28 @@ export default function Home() {
               </div>
             ) : (
               <>
+                {/* Next Matchup Button (Top) */}
+                {voteResult && (
+                  <div className="text-center mb-6">
+                    <button
+                      onClick={handleNextMatchup}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
+                    >
+                      Next Matchup →
+                    </button>
+                  </div>
+                )}
+
                 {/* Comparison Table */}
                 <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6 border border-gray-700 max-w-3xl mx-auto">
-                  <table className="w-full">
+                  <table className="w-full table-fixed">
                     <thead className="bg-gray-700">
                       <tr>
                         <th
-                          className={`px-6 py-4 text-right text-sm font-semibold text-gray-200 ${
-                            !voteResult ? 'cursor-pointer hover:bg-blue-600 hover:shadow-lg transition-all' : ''
+                          className={`px-6 py-4 text-right text-sm font-semibold w-[40%] ${
+                            !voteResult ? 'cursor-pointer hover:bg-blue-600 hover:shadow-lg transition-all text-gray-200' : ''
+                          } ${
+                            voteResult && isWinnerA ? 'bg-green-900/50 text-white' : 'text-gray-200'
                           }`}
                           onClick={() => !voteResult && !voting && handleVote(matchup.seasonA.id, matchup.seasonB.id)}
                         >
@@ -259,12 +273,14 @@ export default function Home() {
                             {voteResult && ` • ${seasonA.team}`}
                           </div>
                         </th>
-                        <th className="px-4 py-4 text-center text-sm font-semibold text-gray-200 w-32">
+                        <th className="px-4 py-4 text-center text-sm font-semibold text-gray-200 w-[20%]">
 
                         </th>
                         <th
-                          className={`px-6 py-4 text-left text-sm font-semibold text-gray-200 ${
-                            !voteResult ? 'cursor-pointer hover:bg-blue-600 hover:shadow-lg transition-all' : ''
+                          className={`px-6 py-4 text-left text-sm font-semibold w-[40%] ${
+                            !voteResult ? 'cursor-pointer hover:bg-blue-600 hover:shadow-lg transition-all text-gray-200' : ''
+                          } ${
+                            voteResult && isWinnerB ? 'bg-green-900/50 text-white' : 'text-gray-200'
                           }`}
                           onClick={() => !voteResult && !voting && handleVote(matchup.seasonB.id, matchup.seasonA.id)}
                         >
@@ -389,27 +405,6 @@ export default function Home() {
                 {!voteResult && voting && (
                   <div className="text-center mb-6 text-gray-400">
                     Voting...
-                  </div>
-                )}
-
-                {/* Winner Badge */}
-                {voteResult && (
-                  <div className="text-center mb-6">
-                    <div className="inline-block bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-lg">
-                      ✓ You picked {isWinnerA ? seasonA.playerName : seasonB.playerName}!
-                    </div>
-                  </div>
-                )}
-
-                {/* Next Matchup Button */}
-                {voteResult && (
-                  <div className="text-center">
-                    <button
-                      onClick={handleNextMatchup}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors"
-                    >
-                      Next Matchup →
-                    </button>
                   </div>
                 )}
               </>
