@@ -25,7 +25,7 @@ A web application for comparing NFL quarterback seasons without bias. Users vote
 
 - Node.js 18+
 - npm or yarn
-- PostgreSQL database (Neon recommended)
+- Docker (for local database)
 
 ### Installation
 
@@ -40,33 +40,54 @@ cd nfl-blind-resume
 npm install
 ```
 
-3. Set up environment variables:
+3. Start the local database:
 ```bash
-cp .env.example .env.local
+docker-compose up -d
 ```
 
-Edit `.env.local` with your database credentials:
-```
-DATABASE_URL=postgresql://user:password@host/database
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-4. Run database migrations:
+4. Set up environment variables:
 ```bash
-npm run db:migrate
+cp .env.local.example .env.local
 ```
 
-5. Seed the database with QB data:
+The default values work with the Docker setup. For production, use Neon PostgreSQL.
+
+5. Push database schema:
+```bash
+npm run db:push
+```
+
+6. Seed the database with QB data:
 ```bash
 npm run db:seed
 ```
+(Note: Seeding script coming soon)
 
-6. Start the development server:
+7. Start the development server:
 ```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
+
+### Database Management
+
+**Local Development (Docker):**
+```bash
+# Start database
+docker-compose up -d
+
+# Stop database
+docker-compose down
+
+# Reset database (deletes all data)
+docker-compose down -v
+```
+
+**Production (Neon):**
+- Set up at https://neon.tech
+- Use the pooled connection URL for `DATABASE_URL`
+- Use the direct connection URL for `DIRECT_URL`
 
 ## Project Structure
 
@@ -107,12 +128,10 @@ QB season data is sourced from [NFLverse](https://github.com/nflverse), filtered
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-
-### Database Management
-
-- `npm run db:migrate` - Run database migrations
-- `npm run db:seed` - Seed database with QB data
-- `npm run db:reset` - Reset database (caution!)
+- `npm run db:generate` - Generate Prisma client
+- `npm run db:migrate` - Run database migrations (with name prompt)
+- `npm run db:push` - Push schema changes to database
+- `npm run db:studio` - Open Prisma Studio GUI
 
 ## Deployment
 
