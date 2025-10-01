@@ -4,6 +4,7 @@
  */
 
 import { prisma } from "./db";
+import type { Decimal } from "@prisma/client/runtime/library";
 
 const RECENT_MATCHUP_LIMIT = 20; // Avoid repeating matchups from last 20 shown
 
@@ -18,7 +19,7 @@ export interface QBSeasonWithElo {
   passingYards: number;
   touchdowns: number;
   interceptions: number;
-  passerRating: string;
+  passerRating: string | Decimal;
   rushAttempts: number;
   rushYards: number;
   rushTouchdowns: number;
@@ -27,7 +28,7 @@ export interface QBSeasonWithElo {
   wins: number | null;
   losses: number | null;
   eloRating: {
-    eloScore: string;
+    eloScore: string | Decimal;
     voteCount: number;
   } | null;
 }
@@ -133,7 +134,7 @@ export function formatSeasonForMatchup(season: QBSeasonWithElo) {
       passingYards: season.passingYards,
       touchdowns: season.touchdowns,
       interceptions: season.interceptions,
-      passerRating: parseFloat(season.passerRating).toFixed(1),
+      passerRating: parseFloat(season.passerRating.toString()).toFixed(1),
       rushAttempts: season.rushAttempts,
       rushYards: season.rushYards,
       rushTouchdowns: season.rushTouchdowns,
