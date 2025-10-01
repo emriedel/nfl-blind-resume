@@ -52,7 +52,7 @@ cp .env.local.example .env.local
 
 The default values work with the Docker setup. For production, use Neon PostgreSQL.
 
-5. Push database schema:
+5. Push database schema (development):
 ```bash
 npm run db:push
 ```
@@ -61,7 +61,13 @@ npm run db:push
 ```bash
 npm run db:seed
 ```
-(Note: Seeding script coming soon)
+
+**Note on migrations:** The production build automatically runs `prisma migrate deploy` to apply pending migrations. For development, use `db:push` for rapid iteration. When ready to create a migration for production:
+```bash
+npm run db:migrate
+git add prisma/migrations/
+git commit -m "Add migration"
+```
 
 7. Start the development server:
 ```bash

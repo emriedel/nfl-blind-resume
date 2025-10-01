@@ -143,10 +143,18 @@ A web application that allows users to compare NFL quarterback seasons in a blin
 - **Session persistence**: Use cookies/localStorage to track session ID
 - **Avoid repeats**: Don't show same matchup twice in short period (track last ~20 matchups per session)
 
+## Database Migrations
+- **Development**: Use `npm run db:push` for rapid schema changes
+- **Production**: Migrations are automatically applied during build via `prisma migrate deploy`
+- **Creating migrations**: When schema changes are ready for production:
+  1. Run `npm run db:migrate` to create a new migration
+  2. Commit the migration files in `prisma/migrations/`
+  3. Push to production - migrations will auto-apply during deployment
+
 ## Development Priorities
 1. ✅ Project setup (Next.js + TypeScript + Tailwind)
 2. ✅ Git repository initialization
-3. 🔄 Database setup (Neon PostgreSQL)
+3. ✅ Database setup (Neon PostgreSQL)
 4. Data ingestion (fetch from NFLverse, seed database)
 5. ELO system implementation
 6. Matchup API endpoint
