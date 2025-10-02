@@ -27,6 +27,7 @@ model QBSeason {
   rushTouchdowns Int      @default(0) @map("rush_touchdowns")
   sacks          Int      @default(0)
   fumbles        Int      @default(0)
+  headshotUrl    String?  @map("headshot_url")
   createdAt      DateTime @default(now()) @map("created_at")
 
   eloRating         EloRating?

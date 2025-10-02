@@ -60,6 +60,7 @@ export interface QBSeasonWithElo {
   rushTouchdowns: number;
   sacks: number;
   fumbles: number;
+  headshotUrl: string | null;
   wins: number | null;
   losses: number | null;
   eloRating: {
@@ -204,6 +205,7 @@ export function revealSeason(season: QBSeasonWithElo) {
   return {
     ...formatSeasonForMatchup(season),
     playerName: season.playerName,
+    headshotUrl: season.headshotUrl,
     eloScore: season.eloRating
       ? parseInt(season.eloRating.eloScore.toString())
       : null,

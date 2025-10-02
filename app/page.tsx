@@ -28,6 +28,7 @@ interface Season {
   stats: Stats;
   record: string | null;
   playerName?: string;
+  headshotUrl?: string | null;
   eloScore?: number;
   eloChange?: number;
   newElo?: number;
@@ -157,22 +158,31 @@ export default function Home() {
                       onClick={() => !voteResult && !voting && handleVote(matchup.seasonA.id, matchup.seasonB.id)}
                     >
                       {voteResult && seasonA.playerName ? (
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold text-white animate-fade-in">
-                            {seasonA.playerName}
-                          </div>
-                          {seasonA.eloChange !== undefined && (
-                            <div className="text-xs">
-                              <span className="text-gray-400">ELO: {seasonA.newElo}</span>{" "}
-                              <span
-                                className={`font-semibold ${
-                                  seasonA.eloChange > 0 ? "text-green-400" : "text-red-400"
-                                }`}
-                              >
-                                ({seasonA.eloChange > 0 ? "+" : ""}
-                                {seasonA.eloChange})
-                              </span>
+                        <div className="flex items-center justify-end gap-3">
+                          <div className="space-y-1 text-right">
+                            <div className="text-2xl font-bold text-white animate-fade-in">
+                              {seasonA.playerName}
                             </div>
+                            {seasonA.eloChange !== undefined && (
+                              <div className="text-xs">
+                                <span className="text-gray-400">ELO: {seasonA.newElo}</span>{" "}
+                                <span
+                                  className={`font-semibold ${
+                                    seasonA.eloChange > 0 ? "text-green-400" : "text-red-400"
+                                  }`}
+                                >
+                                  ({seasonA.eloChange > 0 ? "+" : ""}
+                                  {seasonA.eloChange})
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {seasonA.headshotUrl && (
+                            <img
+                              src={seasonA.headshotUrl}
+                              alt={seasonA.playerName}
+                              className="w-16 h-16 rounded-full object-cover border-2 border-gray-600 animate-fade-in"
+                            />
                           )}
                         </div>
                       ) : (
@@ -232,23 +242,32 @@ export default function Home() {
                       onClick={() => !voteResult && !voting && handleVote(matchup.seasonB.id, matchup.seasonA.id)}
                     >
                       {voteResult && seasonB.playerName ? (
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold text-white animate-fade-in">
-                            {seasonB.playerName}
-                          </div>
-                          {seasonB.eloChange !== undefined && (
-                            <div className="text-xs">
-                              <span className="text-gray-400">ELO: {seasonB.newElo}</span>{" "}
-                              <span
-                                className={`font-semibold ${
-                                  seasonB.eloChange > 0 ? "text-green-400" : "text-red-400"
-                                }`}
-                              >
-                                ({seasonB.eloChange > 0 ? "+" : ""}
-                                {seasonB.eloChange})
-                              </span>
-                            </div>
+                        <div className="flex items-center justify-start gap-3">
+                          {seasonB.headshotUrl && (
+                            <img
+                              src={seasonB.headshotUrl}
+                              alt={seasonB.playerName}
+                              className="w-16 h-16 rounded-full object-cover border-2 border-gray-600 animate-fade-in"
+                            />
                           )}
+                          <div className="space-y-1 text-left">
+                            <div className="text-2xl font-bold text-white animate-fade-in">
+                              {seasonB.playerName}
+                            </div>
+                            {seasonB.eloChange !== undefined && (
+                              <div className="text-xs">
+                                <span className="text-gray-400">ELO: {seasonB.newElo}</span>{" "}
+                                <span
+                                  className={`font-semibold ${
+                                    seasonB.eloChange > 0 ? "text-green-400" : "text-red-400"
+                                  }`}
+                                >
+                                  ({seasonB.eloChange > 0 ? "+" : ""}
+                                  {seasonB.eloChange})
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ) : (
                         <div className="text-2xl font-bold text-white flex items-center justify-start gap-3">
