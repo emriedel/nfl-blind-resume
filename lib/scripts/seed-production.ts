@@ -43,13 +43,16 @@ async function seedProduction() {
     const qbSeasons = filterQBSeasons(allStats, 12, 300);
     console.log(`✅ Found ${qbSeasons.length} qualifying QB seasons\n`);
 
-    // Step 3: Check if data already exists
+    // Step 3: Clear existing data
     const existingCount = await prisma.qBSeason.count();
     if (existingCount > 0) {
-      console.log(`⚠️  Database already contains ${existingCount} QB seasons`);
-      console.log("Skipping seed to avoid duplicates.\n");
-      console.log("To re-seed, first delete existing data manually.\n");
-      return;
+      console.log(`⚠️  Database contains ${existingCount} QB seasons`);
+      console.log("🗑️  Clearing existing data...");
+      await prisma.eloRating.deleteMany();
+      await prisma.vote.deleteMany();
+      await prisma.matchupHistory.deleteMany();
+      await prisma.qBSeason.deleteMany();
+      console.log("✅ Database cleared\n");
     }
 
     // Step 4: Insert QB seasons and ELO ratings
@@ -76,6 +79,7 @@ async function seedProduction() {
             rushTouchdowns: qb.rushTouchdowns,
             sacks: qb.sacks,
             fumbles: qb.fumbles,
+            headshotUrl: qb.headshotUrl || null,
             wins: qb.wins || null,
             losses: qb.losses || null,
           },

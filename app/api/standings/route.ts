@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
       rank: (offset ? parseInt(offset) : 0) + index + 1,
       id: season.id,
       playerName: season.playerName,
+      headshotUrl: season.headshotUrl,
       year: season.year,
       team: season.team,
       eloScore: parseInt(season.eloRating!.eloScore.toString()),
