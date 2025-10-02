@@ -7,7 +7,41 @@ import { prisma } from "./db";
 import type { Decimal } from "@prisma/client/runtime/library";
 
 const RECENT_MATCHUP_LIMIT = 20; // Avoid repeating matchups from last 20 shown
-const MAX_ELO_DIFFERENCE = 100; // Maximum ELO difference between matched seasons
+const MAX_ELO_DIFFERENCE = 50; // Maximum ELO difference between matched seasons
+
+/**
+ * Weighted random selection that favors higher ELO players
+ * Uses exponential weighting: higher ELO = higher probability
+ */
+function weightedRandomSelection(seasons: QBSeasonWithElo[]): QBSeasonWithElo {
+  // Calculate weights based on ELO (exponential scale)
+  const weights = seasons.map((season) => {
+    const elo = season.eloRating
+      ? parseFloat(season.eloRating.eloScore.toString())
+      : 1500;
+    // Scale ELO to 0-1 range (assuming range ~1300-1900), then square it for stronger weighting
+    const normalized = (elo - 1200) / 800; // Maps 1200->0, 2000->1
+    const weight = Math.pow(Math.max(0.1, normalized), 1.5); // Power of 1.5 for moderate bias
+    return weight;
+  });
+
+  // Calculate total weight
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+  // Pick a random value between 0 and totalWeight
+  let random = Math.random() * totalWeight;
+
+  // Find the selected season
+  for (let i = 0; i < seasons.length; i++) {
+    random -= weights[i];
+    if (random <= 0) {
+      return seasons[i];
+    }
+  }
+
+  // Fallback (shouldn't reach here)
+  return seasons[seasons.length - 1];
+}
 
 export interface QBSeasonWithElo {
   id: number;
@@ -83,9 +117,8 @@ export async function getRandomMatchup(
     );
   }
 
-  // Select first season randomly
-  const seasonA =
-    availableSeasons[Math.floor(Math.random() * availableSeasons.length)];
+  // Select first season using weighted random (favors higher ELO)
+  const seasonA = weightedRandomSelection(availableSeasons);
 
   const seasonAElo = seasonA.eloRating
     ? parseFloat(seasonA.eloRating.eloScore.toString())
@@ -105,14 +138,14 @@ export async function getRandomMatchup(
   // If we have enough ELO-matched seasons, use those; otherwise fall back to any different season
   let seasonB: QBSeasonWithElo;
   if (eloMatchedSeasons.length > 0) {
-    seasonB = eloMatchedSeasons[Math.floor(Math.random() * eloMatchedSeasons.length)];
+    seasonB = weightedRandomSelection(eloMatchedSeasons);
   } else {
     // Fallback: select any different season
     const fallbackSeasons = availableSeasons.filter(s => s.id !== seasonA.id);
     if (fallbackSeasons.length === 0) {
       throw new Error("Could not find two different seasons for matchup");
     }
-    seasonB = fallbackSeasons[Math.floor(Math.random() * fallbackSeasons.length)];
+    seasonB = weightedRandomSelection(fallbackSeasons);
   }
 
   // Record this matchup in history
