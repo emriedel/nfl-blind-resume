@@ -100,7 +100,7 @@ export default function LeaderboardPage() {
               Vote
             </button>
             <button
-              className="font-semibold px-6 py-2 rounded-md bg-blue-600 text-white"
+              className="font-semibold px-6 py-2 rounded-md bg-blue-700 text-white"
             >
               Leaderboard
             </button>
@@ -114,7 +114,7 @@ export default function LeaderboardPage() {
         ) : standingsData ? (
           <>
             {/* Filters */}
-            <div className="bg-gray-800 rounded-lg shadow p-4 mb-6 flex flex-wrap gap-4 border border-gray-700">
+            <div className="mb-6 flex flex-wrap gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   Filter by Year
@@ -238,25 +238,12 @@ export default function LeaderboardPage() {
                     {standingsData.standings.map((standing, index) => (
                       <tr
                         key={standing.id}
-                        className={index < 3 ? "bg-gray-750 hover:bg-gray-700" : "hover:bg-gray-750"}
+                        className="hover:bg-gray-750"
                       >
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <span
-                              className={`text-lg font-bold ${
-                                index === 0
-                                  ? "text-yellow-400"
-                                  : index === 1
-                                  ? "text-gray-300"
-                                  : index === 2
-                                  ? "text-orange-400"
-                                  : "text-gray-100"
-                              }`}
-                            >
+                            <span className="text-lg font-bold text-gray-100">
                               {standing.rank}
-                              {index === 0 && " 🥇"}
-                              {index === 1 && " 🥈"}
-                              {index === 2 && " 🥉"}
                             </span>
                           </div>
                         </td>
@@ -370,7 +357,7 @@ export default function LeaderboardPage() {
                         onClick={() => setCurrentPage(page)}
                         className={`px-3 py-2 rounded-lg font-medium ${
                           page === currentPage
-                            ? "bg-blue-600 text-white"
+                            ? "bg-blue-700 text-white"
                             : "bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600"
                         }`}
                       >
