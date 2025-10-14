@@ -63,6 +63,13 @@ export interface QBSeasonWithElo {
   headshotUrl: string | null;
   wins: number | null;
   losses: number | null;
+  passingYardsRank: number | null;
+  touchdownsRank: number | null;
+  passerRatingRank: number | null;
+  completionPctRank: number | null;
+  interceptionsRank: number | null;
+  rushYardsRank: number | null;
+  rushTouchdownsRank: number | null;
   eloRating: {
     eloScore: string | Decimal;
     voteCount: number;
@@ -190,6 +197,15 @@ export function formatSeasonForMatchup(season: QBSeasonWithElo) {
       rushYardsPerAttempt: season.rushAttempts > 0 ? (season.rushYards / season.rushAttempts).toFixed(1) : "0.0",
       sacks: season.sacks,
       fumbles: season.fumbles,
+    },
+    ranks: {
+      passingYards: season.passingYardsRank,
+      touchdowns: season.touchdownsRank,
+      passerRating: season.passerRatingRank,
+      completionPct: season.completionPctRank,
+      interceptions: season.interceptionsRank,
+      rushYards: season.rushYardsRank,
+      rushTouchdowns: season.rushTouchdownsRank,
     },
     record:
       season.wins !== null && season.losses !== null

@@ -19,6 +19,14 @@ export interface QBSeasonData {
   headshotUrl?: string;
   wins?: number;
   losses?: number;
+  // Ranks among all QBs in the same year
+  passingYardsRank?: number;
+  touchdownsRank?: number;
+  passerRatingRank?: number;
+  completionPctRank?: number;
+  interceptionsRank?: number;
+  rushYardsRank?: number;
+  rushTouchdownsRank?: number;
 }
 
 /**
@@ -46,6 +54,41 @@ export function calculatePasserRating(
 }
 
 /**
+ * Transform NFLverse stat to QBSeasonData
+ */
+function transformToQBSeasonData(stat: NFLVersePlayerStats): QBSeasonData {
+  const passerRating = calculatePasserRating(
+    stat.completions,
+    stat.attempts,
+    stat.passing_yards,
+    stat.passing_tds,
+    stat.passing_interceptions
+  );
+
+  return {
+    playerName: stat.player_display_name || stat.player_name,
+    year: stat.season,
+    team: stat.recent_team,
+    gamesPlayed: stat.games,
+    passAttempts: stat.attempts,
+    completions: stat.completions,
+    passingYards: stat.passing_yards,
+    touchdowns: stat.passing_tds,
+    interceptions: stat.passing_interceptions,
+    passerRating,
+    rushAttempts: stat.carries || 0,
+    rushYards: stat.rushing_yards || 0,
+    rushTouchdowns: stat.rushing_tds || 0,
+    sacks: stat.sacks_suffered || 0,
+    fumbles: stat.rushing_fumbles_lost || 0,
+    headshotUrl: stat.headshot_url || undefined,
+    // Note: Win/loss data not in this dataset, will be null
+    wins: undefined,
+    losses: undefined,
+  };
+}
+
+/**
  * Filter and transform NFLverse data to QB seasons
  * Applies minimum thresholds:
  * - Position must be QB
@@ -65,37 +108,16 @@ export function filterQBSeasons(
         stat.attempts >= minAttempts
       );
     })
-    .map((stat) => {
-      const passerRating = calculatePasserRating(
-        stat.completions,
-        stat.attempts,
-        stat.passing_yards,
-        stat.passing_tds,
-        stat.passing_interceptions
-      );
+    .map(transformToQBSeasonData);
+}
 
-      return {
-        playerName: stat.player_display_name || stat.player_name,
-        year: stat.season,
-        team: stat.recent_team,
-        gamesPlayed: stat.games,
-        passAttempts: stat.attempts,
-        completions: stat.completions,
-        passingYards: stat.passing_yards,
-        touchdowns: stat.passing_tds,
-        interceptions: stat.passing_interceptions,
-        passerRating,
-        rushAttempts: stat.carries || 0,
-        rushYards: stat.rushing_yards || 0,
-        rushTouchdowns: stat.rushing_tds || 0,
-        sacks: stat.sacks_suffered || 0,
-        fumbles: stat.rushing_fumbles_lost || 0,
-        headshotUrl: stat.headshot_url || undefined,
-        // Note: Win/loss data not in this dataset, will be null
-        wins: undefined,
-        losses: undefined,
-      };
-    });
+/**
+ * Get all QB seasons without filtering (for ranking purposes)
+ */
+export function getAllQBSeasons(stats: NFLVersePlayerStats[]): QBSeasonData[] {
+  return stats
+    .filter((stat) => stat.position === "QB")
+    .map(transformToQBSeasonData);
 }
 
 /**
@@ -159,4 +181,125 @@ export function calculateInitialELO(qb: QBSeasonData): number {
   const finalElo = BASE_ELO + compositeScore * 0.5;
 
   return Math.round(finalElo);
+}
+
+/**
+ * Calculate rankings for QB seasons within the same year
+ * Ranks QBs from 1 (best) to N (worst) for each statistical category
+ *
+ * @param qbSeasonsToRank - The QB seasons that will receive rank assignments
+ * @param allQBSeasons - All QB seasons to rank against (defaults to qbSeasonsToRank if not provided)
+ */
+export function calculateSeasonRanks(
+  qbSeasonsToRank: QBSeasonData[],
+  allQBSeasons?: QBSeasonData[]
+): QBSeasonData[] {
+  // If no allQBSeasons provided, rank within the same dataset
+  const rankingPool = allQBSeasons || qbSeasonsToRank;
+
+  // Group all QBs by year for ranking
+  const allSeasonsByYear = new Map<number, QBSeasonData[]>();
+  for (const qb of rankingPool) {
+    if (!allSeasonsByYear.has(qb.year)) {
+      allSeasonsByYear.set(qb.year, []);
+    }
+    allSeasonsByYear.get(qb.year)!.push(qb);
+  }
+
+  // Create a map to store rank assignments by player+year
+  const rankMap = new Map<string, {
+    passingYardsRank: number;
+    touchdownsRank: number;
+    passerRatingRank: number;
+    completionPctRank: number;
+    interceptionsRank: number;
+    rushYardsRank: number;
+    rushTouchdownsRank: number;
+  }>();
+
+  // Calculate ranks for each year based on all QBs
+  for (const [year, allQBs] of allSeasonsByYear) {
+    // Passing yards rank (higher is better)
+    const sortedByPassYards = [...allQBs].sort(
+      (a, b) => b.passingYards - a.passingYards
+    );
+    sortedByPassYards.forEach((qb, index) => {
+      const key = `${qb.playerName}-${qb.year}`;
+      if (!rankMap.has(key)) {
+        rankMap.set(key, {} as any);
+      }
+      rankMap.get(key)!.passingYardsRank = index + 1;
+    });
+
+    // Touchdowns rank (higher is better)
+    const sortedByTDs = [...allQBs].sort((a, b) => b.touchdowns - a.touchdowns);
+    sortedByTDs.forEach((qb, index) => {
+      const key = `${qb.playerName}-${qb.year}`;
+      rankMap.get(key)!.touchdownsRank = index + 1;
+    });
+
+    // Passer rating rank (higher is better)
+    const sortedByRating = [...allQBs].sort(
+      (a, b) => b.passerRating - a.passerRating
+    );
+    sortedByRating.forEach((qb, index) => {
+      const key = `${qb.playerName}-${qb.year}`;
+      rankMap.get(key)!.passerRatingRank = index + 1;
+    });
+
+    // Completion % rank (higher is better)
+    const sortedByCompPct = [...allQBs].sort((a, b) => {
+      const pctA = (a.completions / a.passAttempts) * 100;
+      const pctB = (b.completions / b.passAttempts) * 100;
+      return pctB - pctA;
+    });
+    sortedByCompPct.forEach((qb, index) => {
+      const key = `${qb.playerName}-${qb.year}`;
+      rankMap.get(key)!.completionPctRank = index + 1;
+    });
+
+    // Interceptions rank (most to least)
+    const sortedByINTs = [...allQBs].sort(
+      (a, b) => b.interceptions - a.interceptions
+    );
+    sortedByINTs.forEach((qb, index) => {
+      const key = `${qb.playerName}-${qb.year}`;
+      rankMap.get(key)!.interceptionsRank = index + 1;
+    });
+
+    // Rush yards rank (higher is better)
+    const sortedByRushYards = [...allQBs].sort(
+      (a, b) => b.rushYards - a.rushYards
+    );
+    sortedByRushYards.forEach((qb, index) => {
+      const key = `${qb.playerName}-${qb.year}`;
+      rankMap.get(key)!.rushYardsRank = index + 1;
+    });
+
+    // Rush TDs rank (higher is better)
+    const sortedByRushTDs = [...allQBs].sort(
+      (a, b) => b.rushTouchdowns - a.rushTouchdowns
+    );
+    sortedByRushTDs.forEach((qb, index) => {
+      const key = `${qb.playerName}-${qb.year}`;
+      rankMap.get(key)!.rushTouchdownsRank = index + 1;
+    });
+  }
+
+  // Apply ranks only to the QBs we want to rank
+  for (const qb of qbSeasonsToRank) {
+    const key = `${qb.playerName}-${qb.year}`;
+    const ranks = rankMap.get(key);
+    if (ranks) {
+      qb.passingYardsRank = ranks.passingYardsRank;
+      qb.touchdownsRank = ranks.touchdownsRank;
+      qb.passerRatingRank = ranks.passerRatingRank;
+      qb.completionPctRank = ranks.completionPctRank;
+      qb.interceptionsRank = ranks.interceptionsRank;
+      qb.rushYardsRank = ranks.rushYardsRank;
+      qb.rushTouchdownsRank = ranks.rushTouchdownsRank;
+    }
+  }
+
+  return qbSeasonsToRank;
 }

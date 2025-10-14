@@ -5,7 +5,12 @@
 
 import { prisma } from "../db";
 import { fetchMultipleSeasons } from "../nflverse";
-import { filterQBSeasons, calculateInitialELO } from "../qb-utils";
+import {
+  filterQBSeasons,
+  getAllQBSeasons,
+  calculateInitialELO,
+  calculateSeasonRanks,
+} from "../qb-utils";
 
 const START_YEAR = 1999; // First year with comprehensive data
 const END_YEAR = 2024; // Current season
@@ -21,10 +26,22 @@ async function seed() {
     const allStats = await fetchMultipleSeasons(START_YEAR, END_YEAR, "reg");
     console.log(`✅ Fetched ${allStats.length} player season records\n`);
 
-    // Step 2: Filter to QB seasons meeting our criteria
+    // Step 2: Get all QB seasons (for ranking purposes)
+    console.log("🎯 Processing all QB seasons...");
+    const allQBSeasons = getAllQBSeasons(allStats);
+    console.log(`✅ Found ${allQBSeasons.length} total QB seasons\n`);
+
+    // Step 3: Filter to QB seasons meeting our criteria
     console.log("🎯 Filtering QB seasons (12+ games, 300+ attempts)...");
-    const qbSeasons = filterQBSeasons(allStats, 12, 300);
+    let qbSeasons = filterQBSeasons(allStats, 12, 300);
     console.log(`✅ Found ${qbSeasons.length} qualifying QB seasons\n`);
+
+    // Step 4: Calculate season ranks (rank qualifying QBs against ALL QBs)
+    console.log(
+      "📊 Calculating season rankings (comparing against all QBs)..."
+    );
+    qbSeasons = calculateSeasonRanks(qbSeasons, allQBSeasons);
+    console.log(`✅ Rankings calculated\n`);
 
     // Step 3: Clear existing data
     console.log("🗑️  Clearing existing data...");
@@ -61,6 +78,14 @@ async function seed() {
             headshotUrl: qb.headshotUrl || null,
             wins: qb.wins || null,
             losses: qb.losses || null,
+            // Add calculated ranks
+            passingYardsRank: qb.passingYardsRank || null,
+            touchdownsRank: qb.touchdownsRank || null,
+            passerRatingRank: qb.passerRatingRank || null,
+            completionPctRank: qb.completionPctRank || null,
+            interceptionsRank: qb.interceptionsRank || null,
+            rushYardsRank: qb.rushYardsRank || null,
+            rushTouchdownsRank: qb.rushTouchdownsRank || null,
           },
         });
 

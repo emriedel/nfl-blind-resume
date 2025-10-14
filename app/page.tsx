@@ -21,11 +21,22 @@ interface Stats {
   fumbles: number;
 }
 
+interface Ranks {
+  passingYards: number | null;
+  touchdowns: number | null;
+  passerRating: number | null;
+  completionPct: number | null;
+  interceptions: number | null;
+  rushYards: number | null;
+  rushTouchdowns: number | null;
+}
+
 interface Season {
   id: number;
   year: number;
   team: string;
   stats: Stats;
+  ranks: Ranks;
   record: string | null;
   playerName?: string;
   headshotUrl?: string | null;
@@ -320,6 +331,8 @@ export default function Home() {
                     valueB={`${seasonB.stats.completionPct}%`}
                     numA={parseFloat(seasonA.stats.completionPct)}
                     numB={parseFloat(seasonB.stats.completionPct)}
+                    rankA={seasonA.ranks.completionPct}
+                    rankB={seasonB.ranks.completionPct}
                   />
                   <StatRow
                     label="Pass Yds"
@@ -327,6 +340,8 @@ export default function Home() {
                     valueB={seasonB.stats.passingYards.toLocaleString()}
                     numA={seasonA.stats.passingYards}
                     numB={seasonB.stats.passingYards}
+                    rankA={seasonA.ranks.passingYards}
+                    rankB={seasonB.ranks.passingYards}
                   />
                   <StatRow
                     label="Pass YPA"
@@ -341,6 +356,8 @@ export default function Home() {
                     valueB={seasonB.stats.touchdowns}
                     numA={seasonA.stats.touchdowns}
                     numB={seasonB.stats.touchdowns}
+                    rankA={seasonA.ranks.touchdowns}
+                    rankB={seasonB.ranks.touchdowns}
                   />
                   <StatRow
                     label="Int"
@@ -348,6 +365,8 @@ export default function Home() {
                     valueB={seasonB.stats.interceptions}
                     numA={seasonA.stats.interceptions}
                     numB={seasonB.stats.interceptions}
+                    rankA={seasonA.ranks.interceptions}
+                    rankB={seasonB.ranks.interceptions}
                     lowerIsBetter
                   />
                   <StatRow
@@ -356,6 +375,8 @@ export default function Home() {
                     valueB={seasonB.stats.passerRating}
                     numA={parseFloat(seasonA.stats.passerRating)}
                     numB={parseFloat(seasonB.stats.passerRating)}
+                    rankA={seasonA.ranks.passerRating}
+                    rankB={seasonB.ranks.passerRating}
                   />
                   <StatRow
                     label="Sacks"
@@ -379,6 +400,8 @@ export default function Home() {
                     valueB={seasonB.stats.rushYards}
                     numA={seasonA.stats.rushYards}
                     numB={seasonB.stats.rushYards}
+                    rankA={seasonA.ranks.rushYards}
+                    rankB={seasonB.ranks.rushYards}
                   />
                   <StatRow
                     label="Rush TD"
@@ -386,6 +409,8 @@ export default function Home() {
                     valueB={seasonB.stats.rushTouchdowns}
                     numA={seasonA.stats.rushTouchdowns}
                     numB={seasonB.stats.rushTouchdowns}
+                    rankA={seasonA.ranks.rushTouchdowns}
+                    rankB={seasonB.ranks.rushTouchdowns}
                   />
                 </tbody>
               </table>
@@ -404,6 +429,22 @@ export default function Home() {
   );
 }
 
+// Helper function to format rank with ordinal suffix
+function formatRank(rank: number | null): string {
+  if (rank === null) return "";
+
+  const suffix = (rank: number) => {
+    const j = rank % 10;
+    const k = rank % 100;
+    if (j === 1 && k !== 11) return "st";
+    if (j === 2 && k !== 12) return "nd";
+    if (j === 3 && k !== 13) return "rd";
+    return "th";
+  };
+
+  return `${rank}${suffix(rank)}`;
+}
+
 // Stat Row Component
 function StatRow({
   label,
@@ -411,6 +452,8 @@ function StatRow({
   valueB,
   numA,
   numB,
+  rankA,
+  rankB,
   lowerIsBetter = false,
 }: {
   label: string;
@@ -418,6 +461,8 @@ function StatRow({
   valueB: string | number;
   numA?: number;
   numB?: number;
+  rankA?: number | null;
+  rankB?: number | null;
   lowerIsBetter?: boolean;
 }) {
   // Stat-specific thresholds based on ~0.33 IQR from dataset analysis
@@ -458,13 +503,23 @@ function StatRow({
   return (
     <tr className="hover:bg-gray-750">
       <td className={`px-6 py-3 text-right font-semibold ${colorA}`}>
-        {valueA}
+        <div className="flex items-center justify-end gap-2">
+          {rankA && (
+            <span className="text-xs text-gray-500">({formatRank(rankA)})</span>
+          )}
+          <span>{valueA}</span>
+        </div>
       </td>
       <td className="px-4 py-3 text-center text-sm text-gray-400 bg-gray-700">
         {label}
       </td>
       <td className={`px-6 py-3 text-left font-semibold ${colorB}`}>
-        {valueB}
+        <div className="flex items-center justify-start gap-2">
+          <span>{valueB}</span>
+          {rankB && (
+            <span className="text-xs text-gray-500">({formatRank(rankB)})</span>
+          )}
+        </div>
       </td>
     </tr>
   );

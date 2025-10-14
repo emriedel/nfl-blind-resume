@@ -28,6 +28,16 @@ model QBSeason {
   sacks          Int      @default(0)
   fumbles        Int      @default(0)
   headshotUrl    String?  @map("headshot_url")
+
+  // Season rankings (rank among all QBs in same year)
+  passingYardsRank   Int? @map("passing_yards_rank")
+  touchdownsRank     Int? @map("touchdowns_rank")
+  passerRatingRank   Int? @map("passer_rating_rank")
+  completionPctRank  Int? @map("completion_pct_rank")
+  interceptionsRank  Int? @map("interceptions_rank")
+  rushYardsRank      Int? @map("rush_yards_rank")
+  rushTouchdownsRank Int? @map("rush_touchdowns_rank")
+
   createdAt      DateTime @default(now()) @map("created_at")
 
   eloRating         EloRating?
